@@ -1,0 +1,173 @@
+import pandas as pd
+
+links = pd.read_csv('links.csv')
+movies = pd.read_csv('movies.csv')
+ratings = pd.read_csv('ratings.csv')
+tags = pd.read_csv('tags.csv')
+
+global user                                                                                                             # Inteiro que armazena o id do usuário que foi escolhido
+global user2                                                                                                            # Variável para armazenar o usuário que está sendo comparado com o usuário escolhido no momento
+global quantidadeRecomendacoes                                                                                          # Variável que armazena a quantidade de recomendações solicitadas
+
+global ratingList                                                                                                       # Listas que salvam a afinidade de interesses entre o usuário escolhido e os outros usuários
+global usersList
+
+global userMovieId                                                                                                      # Lista que salva os Ids dos filmes que o usuário escolhido assistiu
+global userRating                                                                                                       # Lista que salva os ratings dos filmes que o usuário escolhido assistiu
+
+global recomendedMovie                                                                                                  # Lista que salva os filmes recomendados
+global recomendedMovieId                                                                                                # Lista que salva os ids dos filmes recomendados
+global recomendedMovieGender                                                                                            # Lista que salva os gêneros dos filmes recomendados
+
+
+# Função responsável por criar as listas iniciais restingList e usersList
+def createList():
+    global ratingList
+    global usersList
+    ratingList = []                                                                                                     # Inicializa a lista ratingList
+    usersList = []                                                                                                      # Inicializa a lista usersList
+
+    for i in range(610):                                                                                                # Para cada usuário
+        ratingList.append(0)                                                                                            # Adiciona 0 na lista
+        usersList.append(i + 1)                                                                                         # Adiciona o id correspondentes na lista
+
+
+# Função responsável por imprimir as listas restingList e usersList
+def printList():
+    print()
+    print(f"Lista de usuários:  {usersList}")
+    print(f"Lista de ratings:   {ratingList}")
+
+
+# Função responsável por armazenar o filme que o usuário assistiu e o rating dado
+def saveUserRating():
+    global userMovieId
+    global userRating
+    userMovieId = []                                                                                                    # Inicializa a lista userMovieId
+    userRating = []                                                                                                     # Inicializa a lista userRating
+
+    for i in range(100836):                                                                                             # Para cada linha do arquivo csv
+        if ratings.iloc[i, 0] == user:                                                                                  # Se a linha for do usuário escolhido
+            userMovieId.append(ratings.iloc[i, 1])                                                                      # Salva o id dos filmes que o usuário assistiu
+            userRating.append(ratings.iloc[i, 2])                                                                       # Salva as notas dos filmes que o usuário assistiu
+
+
+# Função responsável por determinar os filmes a serem recomendados
+def getRecomendations():
+    global userMovieId
+    global recomendedMovieId
+    global user2
+
+    recomendedMovieId = []                                                                                              # Inicializa a lista recomendedMovieId
+    quantidade = 0                                                                                                      # Variável para verificar se a quantidade de recomendações já foi atingida
+
+    for i in range(len(usersList) - 1):                                                                                 # Para cada usuário
+        user2 = usersList[i]
+        for j in range(100836):                                                                                         # Para cada linha do arquivo csv
+            if ratings.iloc[j, 0] == user2:                                                                             # Se o id do usuário for igual ao usuário da lista no momento
+                if (ratings.iloc[j, 1] not in userMovieId) and (ratings.iloc[j, 1] not in recomendedMovieId):           # Se o filme verificado não tiver sido assistido pelo usuário nem já tiver sido recomendado
+                    if ratings.iloc[j, 2] == 5:                                                                         # Se a nota dada pelo usuário 2 tiver sido 5
+                        recomendedMovieId.append(ratings.iloc[j, 1])                                                    # Adiciona o filme na lista de recomendações
+                        quantidade += 1                                                                                 # Mais um filme foi recomendado
+            if quantidade == quantidadeRecomendacoes:                                                                   # Se a quantidade de recomendações já tiver sido atingida
+                break                                                                                                   # Saia do primeiro for
+        if quantidade == quantidadeRecomendacoes:                                                                       # Se a quantidade de recomendações já tiver sido atingida
+            break                                                                                                       # Saia do primeiro for
+
+
+# Função responsável por organizar e imprimir o dataframe com as recomendações
+def printRecomendations():
+    global recomendedMovie
+    global recomendedMovieGender
+
+    recomendedMovie = []                                                                                                # Inicializa a lista recomendedMovie
+    recomendedMovieGender = []                                                                                          # Inicializa a lista recomendedMovieGender
+
+    for i in range(len(recomendedMovieId)):                                                                             # Para cada elemento na lista recomendedMovieId
+        for j in range(100836):                                                                                         # Para cada linha no arquivo csv
+            if movies.iloc[j, 0] == recomendedMovieId[i]:                                                               # Se o id do filme na linha for igual ao id do filme recomendado
+                recomendedMovie.append(movies.iloc[j, 1])                                                               # Adiciona esse filme na lista de filmes
+                recomendedMovieGender.append(movies.iloc[j, 2])                                                         # Adiciona os gêneros do filme na lista de gêneros
+                break
+
+    dados = {'Id': recomendedMovieId,                                                                                   # Cria a variável dados para armazenar os nomes, ids e gêneros dos filmes recomendados
+             'Filme': recomendedMovie,
+             'Gênero': recomendedMovieGender
+             }
+
+    df = pd.DataFrame(data=dados, columns=['Id', 'Filme', 'Gênero'])                                                    # Cria um dataframe a partir da variável dados
+
+    pd.set_option('display.max_rows', quantidadeRecomendacoes)                                                          # Configura a quantidade de linhas que aparecerão como a quantidade de recomendações escolhida
+    pd.options.display.width = 0                                                                                        # Comfigura que as colunas fiquem uma do lado da outra
+
+    print(df.head(quantidadeRecomendacoes))                                                                             # Imprime o dataframe com as recomendações
+
+
+# Função responsável por verificar o grau de semelhança no tipo de interesse do usuário escolhido com os demais
+def pesoList():
+    global user2
+
+    for i in range(100836):                                                                                             # Para cada linha do arquivo csv
+        user2 = ratings.iloc[i, 0]                                                                                      # User2 vai ser o id do usuário da linha atual
+        # print(f"{user2}    {i}")
+        if user2 != user:                                                                                               # Se o usuário da linha não for o usuário escolhido inicialmente
+            if ratings.iloc[i, 1] in userMovieId:                                                                       # Se o usuário escolhido já tiver assistido o filme da linha
+                # print(f"                                entrei1    {ratings.iloc[i, 1]}")
+                index = userMovieId.index(ratings.iloc[i, 1])                                                           # Pega o index desse filme
+                if ratings.iloc[i, 2] == userRating[index]:                                                             # Se o usuário tiver dado a mesma nota que o usuário escolhido inicialmente
+                    # print(f"                                        entrei2    {ratings.iloc[i, 2]}")
+                    ratingList[user2 - 1] += 1                                                                          # Aumenta o nível de semelhança de interesse entre os dois usuários
+
+
+# Função responsável por ordenar as listas de grau de semelhança e de usuários em ordem decrescente atraves do algoritmo de ordenação QuickSort
+def ordenarList(rating, users, inicio, fim):
+    i = inicio                                                                                                          # Define o início da lista
+    f = fim                                                                                                             # Define o fim da lista
+    pivo = rating[i]                                                                                                    # Define o pivo sendo o primeiro elemento da lista
+
+    while i <= f:                                                                                                       # Enquanto o inicio for menor que o fim
+        while rating[i] > pivo:                                                                                         # Enquanto o número de início for maior que o pivo
+            i += 1                                                                                                      # Aumenta o valor de i
+        while rating[f] < pivo:                                                                                         # Enquanto o número de fim for menor que o pivo
+            f -= 1                                                                                                      # Decresce o valor de f
+        if f >= i:                                                                                                      # Se o final for maior ou igual ao inicio
+            aux1 = rating[i]                                                                                            # Troca os elementos da lista rating nas posições inicial e final de lugar
+            rating[i] = rating[f]
+            rating[f] = aux1
+
+            aux2 = usersList[i]                                                                                         # Troca os elementos da lista users nas posições inicial e final de lugar
+            users[i] = users[f]
+            users[f] = aux2
+
+            i += 1                                                                                                      # Aumenta o valor de f
+            f -= 1                                                                                                      # Decresce o valor de f
+
+    if inicio < f:                                                                                                      # Se inicio for menor que f
+        ordenarList(rating, users, inicio, f)                                                                           # Repete o processo com os valores dados
+    if fim > i:                                                                                                         # Se fim for maior que i
+        ordenarList(rating, users, i, fim)                                                                              # Repete o processo com os valores dados
+    return rating, users                                                                                                # Fim da ordenação
+
+
+# Função responsável por pegar o input do usuário e chamar as outras funções
+def menu():
+    global user
+    global usersList
+    global ratingList
+    global quantidadeRecomendacoes
+
+    user = int(input("Para qual usuário deseja obter recomendações de filmes? (1-610) "))                               # Pede ao usuário o id do usuário
+    quantidadeRecomendacoes = int(input("Quantas recomendações deseja? "))                                              # Pede ao usuário a quantidade de recomendações que deseja
+    print("\nProcessando...\n")
+
+    saveUserRating()                                                                                                    # Armazena os filmes que o usuário assistiu e os ratings dados
+    pesoList()                                                                                                          # Verifica o grau de semelhança de interesse com outros usuários
+    # printList()
+    ratingList, usersList = ordenarList(ratingList, usersList, 0, len(ratingList) - 1)                                  # Ordena a lista do grau dos usuários em ordem decrescente
+    # printList()
+    getRecomendations()                                                                                                 # Determina as recomendações com base nos dados coletados
+    printRecomendations()                                                                                               # Imprime as recomendações
+
+
+createList()                                                                                                            # Cria as listas
+menu()                                                                                                                  # Inicializa o menu
