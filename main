@@ -1,9 +1,7 @@
 import pandas as pd
 
-links = pd.read_csv('links.csv')
 movies = pd.read_csv('movies.csv')
 ratings = pd.read_csv('ratings.csv')
-tags = pd.read_csv('tags.csv')
 
 global user                                                                                                             # Inteiro que armazena o id do usuário que foi escolhido
 global user2                                                                                                            # Variável para armazenar o usuário que está sendo comparado com o usuário escolhido no momento
